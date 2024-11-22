@@ -2,6 +2,8 @@ import configparser
 import logging
 import random
 import time
+import datetime
+import requests
 
 from meshtastic import BROADCAST_NUM
 
@@ -24,6 +26,102 @@ config.read('config.ini')
 main_menu_items = config['menu']['main_menu_items'].split(',')
 bbs_menu_items = config['menu']['bbs_menu_items'].split(',')
 utilities_menu_items = config['menu']['utilities_menu_items'].split(',')
+
+
+def format_unix_time(unix_time: int) -> str:
+    """
+    Format a UNIX timestamp into a human-readable local time.
+    """
+    return datetime.datetime.fromtimestamp(unix_time, tz=datetime.timezone.utc).astimezone(tz=None).strftime('%H:%M')
+
+
+def handle_weather_command(sender_id, interface):
+    """
+    Handle the 'Node Weather' command by fetching weather data for the node's location.
+    """
+    # Load the API key and temperature unit from the config
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    api_key = config['weather']['api_key']
+    temp_unit = config['weather'].get('temp_unit', 'C')
+
+    # Default coordinates
+    default_lat = float(config['weather'].get('default_latitude', 0.0))
+    default_lon = float(config['weather'].get('default_longitude', 0.0))
+
+    # Get GPS coordinates from the node
+    node_info = interface.nodes.get(sender_id)
+    lat, lon = None, None
+    if node_info and 'position' in node_info:
+        lat = node_info['position'].get('latitude')
+        lon = node_info['position'].get('longitude')
+
+    # Fallback to default coordinates if GPS is unavailable
+    if lat is None or lon is None:
+        logging.info(
+            "GPS data not available for this node. Using default coordinates.")
+        lat, lon = default_lat, default_lon
+
+    # Fetch weather data from OpenWeatherMap
+    weather_data = fetch_weather_by_coords(lat, lon, api_key, temp_unit)
+    if weather_data:
+        temperature, feels_like, humidity, main_weather, sunrise, sunset, description = weather_data
+
+        # Split message into multiple parts
+        response_part1 = (
+            f"🌦 Node Weather (1/3):\n"
+            f"Temp: {temperature}°{temp_unit}, Feels Like: {feels_like}°{temp_unit}\n"
+            f"Humidity: {humidity}%"
+        )
+        response_part2 = (
+            f"🌦 Node Weather (2/3):\n"
+            f"Conditions: {main_weather} ({description})"
+        )
+        response_part3 = (
+            f"🌦 Node Weather (3/3):\n"
+            f"Sunrise: {format_unix_time(sunrise)}, Sunset: {format_unix_time(sunset)}"
+        )
+    else:
+        response_part1 = "🌦 Node Weather: Failed to fetch weather data. Please try again later."
+        response_part2 = ""
+        response_part3 = ""
+
+    # Send each part of the response
+    if response_part1:
+        send_message(response_part1, sender_id, interface)
+    if response_part2:
+        send_message(response_part2, sender_id, interface)
+    if response_part3:
+        send_message(response_part3, sender_id, interface)
+
+
+def fetch_weather_by_coords(lat, lon, api_key, temp_unit):
+    """
+    Fetch weather data from OpenWeatherMap for given coordinates.
+    """
+    api_endpoint = "https://api.openweathermap.org/data/2.5/weather"
+    try:
+        response = requests.get(api_endpoint, params={
+            "lat": lat,
+            "lon": lon,
+            "appid": api_key,
+            "units": "metric" if temp_unit == "C" else "imperial"
+        })
+        response.raise_for_status()
+        weather_data = response.json()
+
+        temperature = int(weather_data["main"]["temp"])
+        feels_like = int(weather_data["main"]["feels_like"])
+        humidity = int(weather_data["main"]["humidity"])
+        sunrise = weather_data["sys"]["sunrise"]
+        sunset = weather_data["sys"]["sunset"]
+        main_weather = weather_data["weather"][0]["main"]
+        description = weather_data["weather"][0]["description"]
+
+        return temperature, feels_like, humidity, main_weather, sunrise, sunset, description
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to fetch weather data: {e}")
+        return None
 
 
 def build_menu(items, menu_name):
@@ -49,6 +147,8 @@ def build_menu(items, menu_name):
             menu_str += "[F]ortune\n"
         elif item.strip() == 'W':
             menu_str += "[W]all of Shame\n"
+        elif item.strip() == 'Z':
+            menu_str += "Node (Z)Weather\n"  # Add this line
     return menu_str
 
 

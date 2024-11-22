@@ -8,7 +8,7 @@ from command_handlers import (
     handle_channel_directory_command, handle_channel_directory_steps, handle_send_mail_command,
     handle_read_mail_command, handle_check_mail_command, handle_delete_mail_confirmation, handle_post_bulletin_command,
     handle_check_bulletin_command, handle_read_bulletin_command, handle_read_channel_command,
-    handle_post_channel_command, handle_list_channels_command, handle_quick_help_command
+    handle_post_channel_command, handle_list_channels_command, handle_quick_help_command, handle_weather_command
 )
 from db_operations import add_bulletin, add_mail, delete_bulletin, delete_mail, get_db_connection, add_channel
 from js8call_integration import handle_js8call_command, handle_js8call_steps, handle_group_message_selection
@@ -53,6 +53,7 @@ board_action_handlers = {
     "x": handle_help_command
 }
 
+
 def process_message(sender_id, message, interface, is_sync_message=False):
     state = get_user_state(sender_id)
     message_lower = message.lower().strip()
@@ -67,16 +68,20 @@ def process_message(sender_id, message, interface, is_sync_message=False):
     if is_sync_message:
         if message.startswith("BULLETIN|"):
             parts = message.split("|")
-            board, sender_short_name, subject, content, unique_id = parts[1], parts[2], parts[3], parts[4], parts[5]
-            add_bulletin(board, sender_short_name, subject, content, [], interface, unique_id=unique_id)
+            board, sender_short_name, subject, content, unique_id = parts[
+                1], parts[2], parts[3], parts[4], parts[5]
+            add_bulletin(board, sender_short_name, subject,
+                         content, [], interface, unique_id=unique_id)
 
             if board.lower() == "urgent":
                 notification_message = f"💥NEW URGENT BULLETIN💥\nFrom: {sender_short_name}\nTitle: {subject}"
                 send_message(notification_message, BROADCAST_NUM, interface)
         elif message.startswith("MAIL|"):
             parts = message.split("|")
-            sender_id, sender_short_name, recipient_id, subject, content, unique_id = parts[1], parts[2], parts[3], parts[4], parts[5], parts[6]
-            add_mail(sender_id, sender_short_name, recipient_id, subject, content, [], interface, unique_id=unique_id)
+            sender_id, sender_short_name, recipient_id, subject, content, unique_id = parts[
+                1], parts[2], parts[3], parts[4], parts[5], parts[6]
+            add_mail(sender_id, sender_short_name, recipient_id,
+                     subject, content, [], interface, unique_id=unique_id)
         elif message.startswith("DELETE_BULLETIN|"):
             unique_id = message.split("|")[1]
             delete_bulletin(unique_id, [], interface)
@@ -91,17 +96,21 @@ def process_message(sender_id, message, interface, is_sync_message=False):
             add_channel(channel_name, channel_url)
     else:
         if message_lower.startswith("sm,,"):
-            handle_send_mail_command(sender_id, message_strip, interface, bbs_nodes)
+            handle_send_mail_command(
+                sender_id, message_strip, interface, bbs_nodes)
         elif message_lower.startswith("cm"):
             handle_check_mail_command(sender_id, interface)
         elif message_lower.startswith("pb,,"):
-            handle_post_bulletin_command(sender_id, message_strip, interface, bbs_nodes)
+            handle_post_bulletin_command(
+                sender_id, message_strip, interface, bbs_nodes)
         elif message_lower.startswith("cb,,"):
             handle_check_bulletin_command(sender_id, message_strip, interface)
         elif message_lower.startswith("chp,,"):
             handle_post_channel_command(sender_id, message_strip, interface)
         elif message_lower.startswith("chl"):
             handle_list_channels_command(sender_id, interface)
+        elif message_lower == "z":
+            handle_weather_command(sender_id, interface)
         else:
             if state and state['command'] == 'MENU':
                 menu_name = state['menu']
@@ -116,10 +125,12 @@ def process_message(sender_id, message, interface, is_sync_message=False):
             elif state and state['command'] == 'BULLETIN_ACTION':
                 handlers = board_action_handlers
             elif state and state['command'] == 'JS8CALL_MENU':
-                handle_js8call_steps(sender_id, message, state['step'], interface, state)
+                handle_js8call_steps(sender_id, message,
+                                     state['step'], interface, state)
                 return
             elif state and state['command'] == 'GROUP_MESSAGES':
-                handle_group_message_selection(sender_id, message, state['step'], state, interface)
+                handle_group_message_selection(
+                    sender_id, message, state['step'], state, interface)
                 return
             else:
                 handlers = main_menu_handlers
@@ -139,37 +150,50 @@ def process_message(sender_id, message, interface, is_sync_message=False):
                 step = state['step']
 
                 if command == 'MAIL':
-                    handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes)
+                    handle_mail_steps(sender_id, message, step,
+                                      state, interface, bbs_nodes)
                 elif command == 'BULLETIN':
-                    handle_bb_steps(sender_id, message, step, state, interface, bbs_nodes)
+                    handle_bb_steps(sender_id, message, step,
+                                    state, interface, bbs_nodes)
                 elif command == 'STATS':
                     handle_stats_steps(sender_id, message, step, interface)
                 elif command == 'CHANNEL_DIRECTORY':
-                    handle_channel_directory_steps(sender_id, message, step, state, interface)
+                    handle_channel_directory_steps(
+                        sender_id, message, step, state, interface)
                 elif command == 'CHECK_MAIL':
                     if step == 1:
-                        handle_read_mail_command(sender_id, message, state, interface)
+                        handle_read_mail_command(
+                            sender_id, message, state, interface)
                     elif step == 2:
-                        handle_delete_mail_confirmation(sender_id, message, state, interface, bbs_nodes)
+                        handle_delete_mail_confirmation(
+                            sender_id, message, state, interface, bbs_nodes)
                 elif command == 'CHECK_BULLETIN':
                     if step == 1:
-                        handle_read_bulletin_command(sender_id, message, state, interface)
+                        handle_read_bulletin_command(
+                            sender_id, message, state, interface)
                 elif command == 'CHECK_CHANNEL':
                     if step == 1:
-                        handle_read_channel_command(sender_id, message, state, interface)
+                        handle_read_channel_command(
+                            sender_id, message, state, interface)
                 elif command == 'LIST_CHANNELS':
                     if step == 1:
-                        handle_read_channel_command(sender_id, message, state, interface)
+                        handle_read_channel_command(
+                            sender_id, message, state, interface)
                 elif command == 'BULLETIN_POST':
-                    handle_bb_steps(sender_id, message, 4, state, interface, bbs_nodes)
+                    handle_bb_steps(sender_id, message, 4,
+                                    state, interface, bbs_nodes)
                 elif command == 'BULLETIN_POST_CONTENT':
-                    handle_bb_steps(sender_id, message, 5, state, interface, bbs_nodes)
+                    handle_bb_steps(sender_id, message, 5,
+                                    state, interface, bbs_nodes)
                 elif command == 'BULLETIN_READ':
-                    handle_bb_steps(sender_id, message, 3, state, interface, bbs_nodes)
+                    handle_bb_steps(sender_id, message, 3,
+                                    state, interface, bbs_nodes)
                 elif command == 'JS8CALL_MENU':
-                    handle_js8call_steps(sender_id, message, step, interface, state)
+                    handle_js8call_steps(
+                        sender_id, message, step, interface, state)
                 elif command == 'GROUP_MESSAGES':
-                    handle_group_message_selection(sender_id, message, step, state, interface)
+                    handle_group_message_selection(
+                        sender_id, message, step, state, interface)
                 else:
                     handle_help_command(sender_id, interface)
             else:
@@ -188,7 +212,8 @@ def on_receive(packet, interface):
             sender_short_name = get_node_short_name(sender_node_id, interface)
             receiver_short_name = get_node_short_name(get_node_id_from_num(to_id, interface),
                                                       interface) if to_id else "Group Chat"
-            logging.info(f"Received message from user '{sender_short_name}' ({sender_node_id}) to {receiver_short_name}: {message_string}")
+            logging.info(
+                f"Received message from user '{sender_short_name}' ({sender_node_id}) to {receiver_short_name}: {message_string}")
 
             bbs_nodes = interface.bbs_nodes
             is_sync_message = any(message_string.startswith(prefix) for prefix in
@@ -196,15 +221,20 @@ def on_receive(packet, interface):
 
             if sender_node_id in bbs_nodes:
                 if is_sync_message:
-                    process_message(sender_id, message_string, interface, is_sync_message=True)
+                    process_message(sender_id, message_string,
+                                    interface, is_sync_message=True)
                 else:
-                    logging.info("Ignoring non-sync message from known BBS node")
+                    logging.info(
+                        "Ignoring non-sync message from known BBS node")
             elif to_id is not None and to_id != 0 and to_id != 255 and to_id == interface.myInfo.my_node_num:
-                process_message(sender_id, message_string, interface, is_sync_message=False)
+                process_message(sender_id, message_string,
+                                interface, is_sync_message=False)
             else:
-                logging.info("Ignoring message sent to group chat or from unknown node")
+                logging.info(
+                    "Ignoring message sent to group chat or from unknown node")
     except KeyError as e:
         logging.error(f"Error processing packet: {e}")
+
 
 def get_recipient_id_by_mail(unique_id):
     # Fix for Mail Delete sync issue
