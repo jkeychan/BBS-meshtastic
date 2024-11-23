@@ -206,7 +206,7 @@ Note: There have been reports of issues with some device roles that may allow th
 
 The following device roles have been working: 
 - **Client**
-- **Router_Client**
+- **Router_Client** (Not Advised)
 
 ## Features
 
