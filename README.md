@@ -1,6 +1,6 @@
 # TC²-BBS Meshtastic Fork
 
-This is a fork of the original [TC²-BBS](https://github.com/TheCommsChannel/TC2-BBS-mesh) system integrated with Meshtastic devices. The system allows for message handling, bulletin boards, mail systems, and a channel directory.
+This is a fork of the original [TC²-BBS](https://github.com/TheCommsChannel/BBS-meshtastic) system integrated with Meshtastic devices. The system allows for message handling, bulletin boards, mail systems, and a channel directory.
 
 ## Setup
 
@@ -24,8 +24,8 @@ This is a fork of the original [TC²-BBS](https://github.com/TheCommsChannel/TC2
    
    ```sh
    cd ~
-   git clone https://github.com/TheCommsChannel/TC2-BBS-mesh.git
-   cd TC2-BBS-mesh
+   git clone https://github.com/jkeychan/BBS-meshtastic/tree/main
+   cd BBS-meshtastic
    ```
 
 2. Set up a Python virtual environment:  
@@ -146,17 +146,17 @@ If you would like to have the script automatically run at boot, follow the steps
    
    ```sh
    User=pi
-   WorkingDirectory=/home/pi/TC2-BBS-mesh
-   ExecStart=/home/pi/TC2-BBS-mesh/venv/bin/python3 /home/pi/TC2-BBS-mesh/server.py
+   WorkingDirectory=/home/pi/BBS-meshtastic
+   ExecStart=/home/pi/BBS-meshtastic/venv/bin/python3 /home/pi/BBS-meshtastic/server.py
    ```
    
-   The file is currently setup for a user named 'pi' and assumes that the TC2-BBS-mesh directory is located in the home directory (which it should be if the earlier directions were followed)
+   The file is currently setup for a user named 'pi' and assumes that the BBS-meshtastic directory is located in the home directory (which it should be if the earlier directions were followed)
    
    We just need to replace the 4 parts that have "pi" in those 3 lines with your username.
 
 2. **Configuring systemd**
    
-   From the TC2-BBS-mesh directory, run the following commands:
+   From the BBS-meshtastic directory, run the following commands:
    
    ```sh
    sudo cp mesh-bbs.service /etc/systemd/system/
