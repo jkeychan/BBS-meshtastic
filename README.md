@@ -213,6 +213,7 @@ The following device roles have been working:
 - **Mail System**: Send and receive mail messages.
 - **Bulletin Boards**: Post and view bulletins on various boards.
 - **Channel Directory**: Add and view channels in the directory.
+- **Weather**: Shows the local node weather using [Openweathermap API](https://openweathermap.org/api)
 - **Statistics**: View statistics about nodes, hardware, and roles.
 - **Wall of Shame**: View devices with low battery levels.
 - **Fortune Teller**: Get a random fortune. Pulls from the fortunes.txt file. Feel free to edit this file remove or add more if you like.
